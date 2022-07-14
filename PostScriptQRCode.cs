@@ -81,6 +81,7 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
 %%LanguageLevel: 2 
 %%Pages: 1
 %%Page: 1 1
+%%DocumentProcessColors: Cyan Magenta Yellow Black
 %%EndComments
 %%BeginConstants
 /sz {1} def
