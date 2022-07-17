@@ -1,6 +1,17 @@
-﻿using QR_Code_Generator;
+﻿using Microsoft.Extensions.Configuration;
+using QR_Code_Generator;
 using QRCoder;
 using Spectre.Console;
+
+IConfigurationRoot configurationRoot = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddInMemoryCollection(new Dictionary<string, string> {
+        { "UrlFormat", "https://ccbuchner.de/clip_code-{0}-{1:D2}/" },
+        { "FilenameFormat", "{0}_{1:D2}.eps" },
+        { "DefaultAmount", "50" }
+    })
+    .AddJsonFile("appsettings.json", true, true)
+    .Build();
 
 AnsiConsole.MarkupLine("[bold underline cyan]QR Code Generator[/]");
 AnsiConsole.MarkupLine("");
@@ -9,15 +20,15 @@ string bn = AnsiConsole.Prompt(
 );
 uint amount = AnsiConsole.Prompt(
     new TextPrompt<uint>("[bold yellow]Wie viele[/] QR Codes sollen generiert werden?")
-        .DefaultValue<uint>(50)
+        .DefaultValue(uint.Parse(configurationRoot["DefaultAmount"]))
         .ValidationErrorMessage("[magenta]Bitte eine Zahl > 0 eingeben[/]")
 );
 
 bn = Uri.EscapeDataString(bn);
 DirectoryInfo outputDir = Directory.CreateDirectory(bn);
 
-const string format = "https://ccbuchner.de/clip_code-{0}-{1:D2}/";
-const string filenameFormat = "{0}_{1:D2}.eps";
+string format = configurationRoot["UrlFormat"];
+string filenameFormat = configurationRoot["FilenameFormat"];
 using QRCodeGenerator qRCodeGenerator = new();
 
 AnsiConsole.Progress().Start(ctx =>
@@ -26,13 +37,19 @@ AnsiConsole.Progress().Start(ctx =>
     for (int k = 1; k <= amount; k++)
     {
         string payload = string.Format(format, bn, k);
-        using QRCodeData qrCodeData = qRCodeGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
-        using PostscriptQRCode qrCode = new(qrCodeData);
-        string postscript = qrCode.GetGraphic(10, CMYKColor.Black, CMYKColor.White, epsFormat: true);
-        string filename = Path.Combine(outputDir.FullName, string.Format(filenameFormat, bn, k));
-        File.WriteAllText(filename, postscript);
+        string filename = string.Format(filenameFormat, bn, k);
+        CreateQrCode(filename, payload);
         generator.Increment(1);
     }
 });
 AnsiConsole.MarkupLine("QR Codes generiert in [cyan]{0}[/]", outputDir.FullName);
 Console.ReadKey();
+
+void CreateQrCode(string filename, string payload)
+{
+    using QRCodeData qrCodeData = qRCodeGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
+    using PostscriptQRCode qrCode = new(qrCodeData);
+    string postscript = qrCode.GetGraphic(10, CMYKColor.Black, CMYKColor.White, epsFormat: true);
+    string fullname = Path.Combine(outputDir.FullName, filename);
+    File.WriteAllText(fullname, postscript);
+}
