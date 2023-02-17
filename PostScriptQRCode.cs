@@ -104,7 +104,10 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     fill
 }} def
 /f {{ 
+    gsave
+    true setoverprint
     {0} {1} {2} {3} csquare
+    grestore
     1 0 translate
 }} def
 /b {{ 
