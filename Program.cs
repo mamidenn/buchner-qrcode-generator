@@ -50,6 +50,7 @@ void CreateQrCode(string filename, string payload)
     using QRCodeData qrCodeData = qRCodeGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
     using PostscriptQRCode qrCode = new(qrCodeData);
     string postscript = qrCode.GetGraphic(10, CMYKColor.Black, CMYKColor.White, epsFormat: true);
-    string fullname = Path.Combine(outputDir.FullName, filename);
+    postscript = postscript.Replace("%%Title: QRCode", "%%Title: " + filename);
+    string fullname = Path.Combine(outputDir.FullName, filename + ".eps");
     File.WriteAllText(fullname, postscript);
 }
